@@ -1,0 +1,27 @@
+.search-page {
+    padding: 2rem;
+}
+
+.search-page h1 {
+    margin-bottom: 0.5rem;
+}
+
+.search-query {
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+.search-results {
+    margin-top: 1rem;
+}
+
+.results-count {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+}
