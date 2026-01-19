@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Monitor, Command, Terminal, Image as ImageIcon, Save, AlertCircle, Package } from 'lucide-react';
-import { createApp } from '../api/apps';
+import { createApp, uploadFile } from '../api/apps';
 import './CreatorForm.css';
 
 const CreatorForm = () => {
@@ -62,25 +62,32 @@ const CreatorForm = () => {
         }
 
         try {
-            const submitData = new FormData();
-            submitData.append('name', formData.name);
-            submitData.append('category', formData.category);
-            submitData.append('description', formData.description);
-            submitData.append('license', formData.license);
-            submitData.append('version', formData.version);
+            // Upload files first
+            let iconUrl = null;
+            let fileUrl = null;
 
+            if (formData.thumbnail) {
+                iconUrl = await uploadFile(formData.thumbnail, 'icons');
+            }
+
+            fileUrl = await uploadFile(formData.appFile, 'files');
+
+            // Create app with uploaded file URLs
             const osSupport = Object.entries(formData.osSupport)
                 .filter(([_, enabled]) => enabled)
                 .map(([os]) => os);
-            submitData.append('osSupport', JSON.stringify(osSupport));
 
-            if (formData.thumbnail) {
-                submitData.append('icon', formData.thumbnail);
-            }
+            const newApp = await createApp({
+                name: formData.name,
+                category: formData.category,
+                description: formData.description,
+                license: formData.license,
+                version: formData.version,
+                osSupport,
+                iconUrl,
+                fileUrl
+            });
 
-            submitData.append('appFile', formData.appFile);
-
-            const newApp = await createApp(submitData);
             navigate(`/app/${newApp.id}`);
         } catch (err) {
             setError(err.message);

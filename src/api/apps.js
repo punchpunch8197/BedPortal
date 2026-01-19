@@ -41,10 +41,26 @@ export async function fetchAppById(id) {
   return data.data;
 }
 
-export async function createApp(formData) {
-  const response = await fetch(`${API_BASE}/apps`, {
+export async function uploadFile(file, type = 'files') {
+  const formData = new FormData();
+  formData.append(type === 'icons' ? 'icon' : 'appFile', file);
+
+  const response = await fetch(`${API_BASE}/upload`, {
     method: 'POST',
     body: formData
+  });
+
+  const data = await handleResponse(response);
+  return data.url;
+}
+
+export async function createApp(appData) {
+  const response = await fetch(`${API_BASE}/apps`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(appData)
   });
 
   const data = await handleResponse(response);
