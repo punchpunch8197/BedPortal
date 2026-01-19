@@ -1,8 +1,12 @@
-import { supabase } from '../../lib/supabase.js';
+import { supabase, isConfigured } from '../../lib/supabase.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
+  }
+
+  if (!isConfigured) {
+    return res.status(500).json({ success: false, error: 'Supabase not configured' });
   }
 
   try {
