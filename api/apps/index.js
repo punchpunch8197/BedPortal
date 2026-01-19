@@ -1,20 +1,12 @@
 import { getSupabase, isConfigured } from '../lib/supabase.js';
 
 export default async function handler(req, res) {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
-  }
-
-  if (!isConfigured()) {
-    return res.status(500).json({
-      success: false,
-      error: 'Supabase not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.'
-    });
   }
 
   if (req.method === 'GET') {
@@ -30,8 +22,26 @@ export default async function handler(req, res) {
 
 async function handleGet(req, res) {
   try {
+    // Supabase 없으면 빈 배열 반환
+    if (!isConfigured()) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        total: 0,
+        message: 'Database not configured'
+      });
+    }
+
+    const supabase = await getSupabase();
+    if (!supabase) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+        total: 0
+      });
+    }
+
     const { q, category, limit = 50, offset = 0 } = req.query;
-    const supabase = getSupabase();
 
     let query = supabase
       .from('apps')
@@ -51,7 +61,7 @@ async function handleGet(req, res) {
 
     if (error) throw error;
 
-    const formattedData = data.map(formatApp);
+    const formattedData = (data || []).map(formatApp);
 
     return res.status(200).json({
       success: true,
@@ -60,14 +70,33 @@ async function handleGet(req, res) {
     });
   } catch (error) {
     console.error('Error fetching apps:', error);
-    return res.status(500).json({ success: false, error: 'Failed to fetch apps' });
+    return res.status(200).json({
+      success: true,
+      data: [],
+      total: 0,
+      error: error.message
+    });
   }
 }
 
 async function handlePost(req, res) {
   try {
+    if (!isConfigured()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Database not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY.'
+      });
+    }
+
+    const supabase = await getSupabase();
+    if (!supabase) {
+      return res.status(400).json({
+        success: false,
+        error: 'Database connection failed'
+      });
+    }
+
     const { name, category, description, license, version, osSupport, iconUrl, fileUrl } = req.body;
-    const supabase = getSupabase();
 
     if (!name || !category) {
       return res.status(400).json({
@@ -100,7 +129,7 @@ async function handlePost(req, res) {
     });
   } catch (error) {
     console.error('Error creating app:', error);
-    return res.status(500).json({ success: false, error: 'Failed to create app' });
+    return res.status(500).json({ success: false, error: error.message || 'Failed to create app' });
   }
 }
 

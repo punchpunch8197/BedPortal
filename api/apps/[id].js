@@ -9,20 +9,21 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  if (!isConfigured()) {
-    return res.status(500).json({
-      success: false,
-      error: 'Supabase not configured'
-    });
-  }
-
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
   try {
     const { id } = req.query;
-    const supabase = getSupabase();
+
+    if (!isConfigured()) {
+      return res.status(404).json({ success: false, error: 'App not found' });
+    }
+
+    const supabase = await getSupabase();
+    if (!supabase) {
+      return res.status(404).json({ success: false, error: 'App not found' });
+    }
 
     const { data, error } = await supabase
       .from('apps')
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error fetching app:', error);
-    return res.status(500).json({ success: false, error: 'Failed to fetch app' });
+    return res.status(404).json({ success: false, error: 'App not found' });
   }
 }
 

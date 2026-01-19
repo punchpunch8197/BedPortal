@@ -15,22 +15,26 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  if (!isConfigured()) {
-    return res.status(500).json({ success: false, error: 'Supabase not configured' });
-  }
-
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
   try {
+    if (!isConfigured()) {
+      return res.status(400).json({ success: false, error: 'Storage not configured' });
+    }
+
+    const supabase = await getSupabase();
+    if (!supabase) {
+      return res.status(400).json({ success: false, error: 'Storage connection failed' });
+    }
+
     const chunks = [];
     for await (const chunk of req) {
       chunks.push(chunk);
     }
     const buffer = Buffer.concat(chunks);
 
-    // Parse multipart form data (simplified)
     const contentType = req.headers['content-type'];
     const boundary = contentType.split('boundary=')[1];
 
@@ -38,11 +42,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'Invalid content type' });
     }
 
-    // Extract file from multipart data
     const parts = buffer.toString('binary').split(`--${boundary}`);
     let fileData = null;
     let fileName = null;
-    let fileType = 'icons'; // default
+    let fileType = 'icons';
 
     for (const part of parts) {
       if (part.includes('filename=')) {
@@ -56,7 +59,6 @@ export default async function handler(req, res) {
           fileType = nameMatch[1] === 'appFile' ? 'files' : 'icons';
         }
 
-        // Extract binary data after headers
         const headerEnd = part.indexOf('\r\n\r\n');
         if (headerEnd !== -1) {
           const dataStart = headerEnd + 4;
@@ -70,12 +72,9 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'No file uploaded' });
     }
 
-    // Generate unique filename
     const uniqueName = `${Date.now()}-${fileName}`;
     const filePath = `${fileType}/${uniqueName}`;
-    const supabase = getSupabase();
 
-    // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('app-files')
       .upload(filePath, fileData, {
@@ -88,7 +87,6 @@ export default async function handler(req, res) {
       throw uploadError;
     }
 
-    // Get public URL
     const { data: urlData } = supabase.storage
       .from('app-files')
       .getPublicUrl(filePath);
@@ -100,6 +98,6 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error uploading file:', error);
-    return res.status(500).json({ success: false, error: 'Failed to upload file' });
+    return res.status(500).json({ success: false, error: error.message || 'Failed to upload file' });
   }
 }

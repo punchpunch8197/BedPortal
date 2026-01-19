@@ -5,13 +5,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  if (!isConfigured()) {
-    return res.status(500).json({ success: false, error: 'Supabase not configured' });
-  }
-
   try {
     const { id } = req.query;
-    const supabase = getSupabase();
+
+    if (!isConfigured()) {
+      return res.status(404).json({ success: false, error: 'App not found' });
+    }
+
+    const supabase = await getSupabase();
+    if (!supabase) {
+      return res.status(404).json({ success: false, error: 'App not found' });
+    }
 
     const { data, error } = await supabase
       .from('apps')
@@ -27,7 +31,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ success: false, error: 'No download file available' });
     }
 
-    // Redirect to the file URL
     return res.redirect(302, data.file_path);
   } catch (error) {
     console.error('Error downloading app:', error);
