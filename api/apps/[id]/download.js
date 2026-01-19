@@ -1,16 +1,17 @@
-import { supabase, isConfigured } from '../../lib/supabase.js';
+import { getSupabase, isConfigured } from '../../lib/supabase.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Method not allowed' });
   }
 
-  if (!isConfigured) {
+  if (!isConfigured()) {
     return res.status(500).json({ success: false, error: 'Supabase not configured' });
   }
 
   try {
     const { id } = req.query;
+    const supabase = getSupabase();
 
     const { data, error } = await supabase
       .from('apps')

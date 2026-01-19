@@ -1,4 +1,4 @@
-import { supabase, isConfigured } from './lib/supabase.js';
+import { getSupabase, isConfigured } from './lib/supabase.js';
 
 export const config = {
   api: {
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  if (!isConfigured) {
+  if (!isConfigured()) {
     return res.status(500).json({ success: false, error: 'Supabase not configured' });
   }
 
@@ -73,6 +73,7 @@ export default async function handler(req, res) {
     // Generate unique filename
     const uniqueName = `${Date.now()}-${fileName}`;
     const filePath = `${fileType}/${uniqueName}`;
+    const supabase = getSupabase();
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage

@@ -1,18 +1,25 @@
-let supabase = null;
-let isConfigured = false;
+import { createClient } from '@supabase/supabase-js';
 
-try {
-  const { createClient } = await import('@supabase/supabase-js');
+let _supabase = null;
+let _initialized = false;
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+export function getSupabase() {
+  if (!_initialized) {
+    _initialized = true;
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY;
 
-  if (supabaseUrl && supabaseKey) {
-    supabase = createClient(supabaseUrl, supabaseKey);
-    isConfigured = true;
+    if (url && key) {
+      try {
+        _supabase = createClient(url, key);
+      } catch (e) {
+        console.error('Supabase init error:', e);
+      }
+    }
   }
-} catch (e) {
-  console.error('Failed to initialize Supabase:', e);
+  return _supabase;
 }
 
-export { supabase, isConfigured };
+export function isConfigured() {
+  return !!(process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY);
+}

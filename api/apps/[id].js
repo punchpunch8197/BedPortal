@@ -1,4 +1,4 @@
-import { supabase, isConfigured } from '../lib/supabase.js';
+import { getSupabase, isConfigured } from '../lib/supabase.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  if (!isConfigured) {
+  if (!isConfigured()) {
     return res.status(500).json({
       success: false,
       error: 'Supabase not configured'
@@ -22,6 +22,7 @@ export default async function handler(req, res) {
 
   try {
     const { id } = req.query;
+    const supabase = getSupabase();
 
     const { data, error } = await supabase
       .from('apps')

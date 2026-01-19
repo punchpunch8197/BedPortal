@@ -1,4 +1,4 @@
-import { supabase, isConfigured } from '../lib/supabase.js';
+import { getSupabase, isConfigured } from '../lib/supabase.js';
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -10,7 +10,7 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
-  if (!isConfigured) {
+  if (!isConfigured()) {
     return res.status(500).json({
       success: false,
       error: 'Supabase not configured. Set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.'
@@ -31,6 +31,7 @@ export default async function handler(req, res) {
 async function handleGet(req, res) {
   try {
     const { q, category, limit = 50, offset = 0 } = req.query;
+    const supabase = getSupabase();
 
     let query = supabase
       .from('apps')
@@ -66,6 +67,7 @@ async function handleGet(req, res) {
 async function handlePost(req, res) {
   try {
     const { name, category, description, license, version, osSupport, iconUrl, fileUrl } = req.body;
+    const supabase = getSupabase();
 
     if (!name || !category) {
       return res.status(400).json({
