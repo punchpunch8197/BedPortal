@@ -1,5 +1,21 @@
 const API_BASE = '/api';
 
+async function handleResponse(response) {
+  const contentType = response.headers.get('content-type');
+
+  if (!contentType || !contentType.includes('application/json')) {
+    throw new Error('Server error: API not available');
+  }
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || `Request failed with status ${response.status}`);
+  }
+
+  return data;
+}
+
 export async function fetchApps(options = {}) {
   const { q, category, limit, offset } = options;
 
@@ -13,22 +29,14 @@ export async function fetchApps(options = {}) {
   const url = `${API_BASE}/apps${queryString ? `?${queryString}` : ''}`;
 
   const response = await fetch(url);
-  const data = await response.json();
-
-  if (!data.success) {
-    throw new Error(data.error || 'Failed to fetch apps');
-  }
+  const data = await handleResponse(response);
 
   return data.data;
 }
 
 export async function fetchAppById(id) {
   const response = await fetch(`${API_BASE}/apps/${id}`);
-  const data = await response.json();
-
-  if (!data.success) {
-    throw new Error(data.error || 'Failed to fetch app');
-  }
+  const data = await handleResponse(response);
 
   return data.data;
 }
@@ -39,11 +47,7 @@ export async function createApp(formData) {
     body: formData
   });
 
-  const data = await response.json();
-
-  if (!data.success) {
-    throw new Error(data.error || 'Failed to create app');
-  }
+  const data = await handleResponse(response);
 
   return data.data;
 }
